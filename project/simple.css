@@ -1,0 +1,11 @@
+body {
+    background-color: green;
+    max-width: fit-content;
+    height: 600px;
+}
+
+#output {
+    overflow-y: scroll;
+    height:300px
+
+}

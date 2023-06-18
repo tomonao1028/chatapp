@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="simple.css">
+    <title>Chatアプリ</title>
+</head>
+
+<body>
+
+    <!-- コンテンツ表示画面 -->
+
+    <div class="whole">
+        <div id="output"></div>
+        <div>
+            名前: <input type="text" id="uname">
+        </div>
+        <div>
+            <textarea name="" id="text" cols="30" rows="10"></textarea>
+            <button id="send">送信</button>
+        </div>
+        <audio id="audio">
+            <source src = "line-notification-no-13.mp3" type="audio/mp3">
+        </audio>
+    </div>
+
+    <!--/ コンテンツ表示画面 -->
+
+
+
+    <!-- JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <!-- JQuery -->
+
+
+    <!--** 以下Firebase **-->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+        import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved }
+            from "https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDD2sh0gYiUmG2nYm49qMynVpU729B9Ct8",
+            authDomain: "fir-tomonao.firebaseapp.com",
+            projectId: "fir-tomonao",
+            storageBucket: "fir-tomonao.appspot.com",
+            messagingSenderId: "64582764563",
+            appId: "1:64582764563:web:d7d51d23282b3f8daad7e6"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+
+        // realtime DBに接続する
+        const db = getDatabase(app)
+        const dbRef = ref(db, "chat")
+
+        // 送信ボタンが押されたらデータをDBに送信
+        $("#send").on("click", function () {
+
+            // 保存したいデータのオブジェクションを作る
+            const msg = {
+                uname: $("#uname").val(),
+                text: $("#text").val()
+            };
+            console.log(msg);
+            // 新規データを送付可能状態にする
+            const newPostRef = push(dbRef)
+
+            // DBに値を送信
+            set(newPostRef, msg)
+                .then(() => {
+                    // 送信成功時にスクロールを一番下まで移動
+                    $("#output").scrollTop($("#output")[0].scrollHeight);
+                });
+        });
+
+        onChildAdded(dbRef, function (data) {
+            const msg = data.val();
+            const key = data.key;
+
+            // 日時
+            const now = new Date();
+            const nowYear = now.getFullYear();
+            const nowMon = now.getMonth() + 1;
+            const nowDate = now.getDate();
+            const nowHour = now.getHours();
+            const nowMinute = now.getMinutes();
+
+
+
+            const messageElement = $("<p></p>").text(`${nowYear}/${nowMon}/${nowDate} ${nowHour}:${nowMinute}` + "      " + msg.uname + "\n" + msg.text);
+            const deleteButtonElement = $("<button class='delete-button'>削除</button>");
+            messageElement.data("key", key); // データベース上のキーをデータ属性として設定
+
+
+            messageElement.append(deleteButtonElement); //削除ボタンを追加 
+            $("#output").append(messageElement); // #output の最後に追加
+
+            $(document).on("click", ".delete-button", function () {
+                const messageElement = $(this).parent(); // 削除ボタンのメッセージ要素を取得
+                const key = messageElement.data("key"); // メッセージ要素からデータベース上のキーを取得
+
+                // データベースから該当のキーのデータを削除
+                remove(ref(db, `chat/${key}`))
+                    .then(() => {
+                        // 削除成功時の処理
+                        messageElement.remove(); // メッセージ要素を削除
+
+                    })
+
+            });
+
+
+        });
+        onChildRemoved(dbRef, function (data) {
+            const key = data.key;
+           
+            // 削除されたデータの処理
+            $(`[data-key="${key}"]`).remove(); // メッセージ要素をキーで検索して削除
+            alert("削除しちゃうよ？")
+        });
+
+    </script>
+
+</body>
+
+</html>
